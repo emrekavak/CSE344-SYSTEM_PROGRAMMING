@@ -1,0 +1,259 @@
+\documentclass{article}
+\usepackage[utf8]{inputenc}
+\usepackage{graphics}
+\usepackage{subfigure}
+\usepackage{float}
+\usepackage{natbib}
+\usepackage{graphicx}
+\usepackage{float}
+\usepackage{color}
+\usepackage{ragged2e}
+
+\topmargin -4.5cm
+\title{CSE344 – System Programming Final Project Report Processes, Sockets, Threads, IPC, Synchronization}
+\author{151044085-EMRE KAVAK}
+\date{June 2020}
+\usepackage{geometry}
+ \geometry{
+ a4paper,
+ total={170mm,257mm},
+ left=20mm,
+ top=20mm,
+ }
+ 
+\begin{document}
+
+\maketitle
+
+\section{Daemon Process}
+ When program start, created locked file for protect double instance and after that called fork() syscall and create child process and  main process exited. Main thread checked and started daemon process. After that,closed inherited fd and  argument check started.
+
+\begin{figure}[h!] 
+    \centering
+    \includegraphics[scale=0.5]{3.jpg}
+    \caption{daemon process}
+\end{figure}
+
+After argument check, created log file and argument information written into log file.
+
+\begin{figure}[h!]
+    \centering
+    \includegraphics[scale=0.5]{6.jpg}
+    \caption{started log file write}
+    \label{fig:e}
+\end{figure} 
+\newpage
+
+\section{Graph Data Structure}
+I used adjacency List for keep graph into memory. Fort keep graph, I used linked list structure into adjacency list.  List size equal unique start node count. When I read graph file, I calculated unique start node count to efficient memory usage. Each unique edges added this adjacency list when file read.
+
+\begin{figure}[h!] 
+    \centering
+    \includegraphics[scale=0.5]{8.jpg}
+    \caption{Graph Data Structure}
+\end{figure}
+CreateGraph function create dynamic graph according to  unique graph size.Array represent Adjaceny list array. All heap filled with NULL because of check empty or not. 
+\begin{figure}[h!] 
+    \centering
+    \includegraphics[scale=0.7]{7.jpg}
+    \caption{create graph function}
+\end{figure}
+
+
+\section{DataBase Structure}
+DataBase keep calculated paths. It use data struct objects and keeped these objects in an array. Data struct keep start, destination node and result of this nodes calculation. DataBase struct keep data struct nodes array. For search in databse, I used hash code function.
+
+\begin{figure}[h!] 
+    \centering
+    \includegraphics[scale=0.8]{9.jpg}
+    \caption{DataBase structure}
+\end{figure}
+
+DataBase created with this function. Capacitiy is edges count. All start and destination variables filled with -1 for represent empty index. Data base use getHashCode function for fast search calculated paths in database. This function simply get 2 start node sum get produce hash code according to capacity of database.
+\begin{figure}[h!] 
+    \centering
+    \includegraphics[scale=0.8]{100.jpg}
+    \caption{DataBase create}
+\end{figure}
+
+\begin{figure}[h!] 
+    \centering
+    \includegraphics[scale=0.8]{10.jpg}
+    \caption{Hash code function}
+\end{figure}
+\newpage
+When threads calculate paths, they call this function and this function add results into database with use hash code. If produced hash code index full, function search until found empty place in database. Also, if database full, there is function to extand database size with capacity*2.
+\begin{figure}[h!] 
+    \centering
+    \includegraphics[scale=0.6]{12.jpg}
+    \caption{database add element function}
+\end{figure}
+
+For get database entry, first call getDbEntryINdex function for check if this entry exists or not with using hash code function.  Start and end nodes sum send to hash code function. And returned index checked to -1 or not. -1 means this index empty. 
+\begin{figure}[h!] 
+    \centering
+    \includegraphics[scale=0.5]{14.jpg}
+    \caption{getting databse entry index}
+\end{figure}
+
+\newpage
+\section{BFS Search}
+This function, first check if requested start node in unique start nodes or not. If there is not, send not path found message to client. If there is, start bfs search. First get start node and add visited array. After that, get start node directed nodes and add these nodes into queue. When finished start nodes adjacents, start pop these nodes from queue and get these nodes adjacents and add visited nodes array this nodes and so on until found destination node. When search paths, I used 2d array for visited nodes paths and when destionation node founds, I just get these paths and according to destination node parent node, I found path from these paths array. 
+\begin{figure}[h!] 
+    \centering
+    \includegraphics[scale=0.5]{13.jpg}
+    \caption{BFS search function}
+\end{figure}
+
+\section{Thread Pool}
+After graph load finished, I first create resizing thread. After that, I created thread pool according to given s size. Maximum thread size and instant thread size keeped in variables and these variables used by threads function and main thread. Thread pool threads use tasksArr array for check there is a request for them or not.
+\newpage
+\begin{figure}[h!] 
+    \centering
+    \includegraphics[scale=0.6]{16.jpg}
+    \caption{Thread Pool}
+\end{figure}
+When threads enter thread function, they check these struct array with their id and if full is 1, it means there is a job fort hem. Sockedfd refers client socket fd for send answer the result them.Each thread used these struct array. Each thread have their own mutex and condition variables.
+\begin{figure}[h!] 
+    \centering
+    \includegraphics[scale=0.6]{19.jpg}
+    \caption{ThreadTask struct}
+\end{figure}
+
+
+
+\section{Socket Structure}
+After dynamic thread pool created, I created socket with socket syscall. I used AF INET type because of we use IPV4 structure. Server will call with  127.0.0.1  ip adres and this IP adress constant in server.c file. After created socket, entered port number and ip adress assigned and  used bind for bind ip adress and socket.  After that, socket listening started and will accept in infinite loop by main thread. Also signals listen in this line end.
+\begin{figure}[h!] 
+    \centering
+    \includegraphics[scale=0.5]{101.jpg}
+    \caption{socket structure}
+\end{figure}
+
+\section{Main Thread}
+Main thread manage server. First accept request. If accept success, check avaible thread from tasks array and if found an thread, assign socket fd send send condition signal for these thread. After send, worker thread count increase and load calculate. If load percentage big or equal percentage 75, resizing thread condition signal send. İf worker thread count equal to instant thread count, main thread wait condition signal from threads. Threads also check these equalization.  If SIGINT signal have sent, 
+gotSIGINTSig static atamic variable checked. If signal have sent, break and finish listening socket.
+
+\begin{figure}[h!] 
+    \centering
+    \includegraphics[scale=0.5]{102.jpg}
+    \caption{Main Thread}
+\end{figure}
+
+\section{Thread Pool Function}
+	All thread pool threads use this function. First wait condition signal from main thread when job assing and after that read request with socket fd. After that first call reader function for check database entry. If there is no entry in database, call writer function and send result to client and add results into database. If SIGINT send, exit and return 0.
+
+\begin{figure}[h!] 
+    \centering
+    \includegraphics[scale=0.4]{th1.jpg}
+    \caption{Thread Pool Function 1}
+\end{figure}
+\begin{figure}[h!] 
+    \centering
+    \includegraphics[scale=0.4]{th2.jpg}
+    \caption{Thread Pool Function 2}
+\end{figure}
+\newpage
+\section{Resizing Thread}
+These thread, wait resize mutex signal from main thread and if load percentage equal or big percentage 80, do realloc call and get new size from memory and assign this threadPool variable. Use mutex and condition variables for senkronization with main thread. If SIGINT signal have sent, check gotSIGINTSig variable and break to join in signal handler function
+\begin{figure}[h!] 
+    \centering
+    \includegraphics[scale=0.5]{103.jpg}
+    \caption{Resizing Thread function}
+\end{figure}
+
+\section{Reader Function}
+Theread pool thread use this function when client send request. First lock database mutex. After that, check AW(active writer)+WW(Wait writer) count and wait okToRead signal from writer function. After that check database for entry. If entry exist, send client. If not exist, return res (-1 means not exist). If (AR == 0 and WW bigger than 0) send to writer oktowrite signal (priority writer) and unlock database mutex.
+\begin{figure}[h!] 
+    \centering
+    \includegraphics[scale=0.7]{104.jpg}
+    \caption{Reader function}
+\end{figure}
+\newpage
+\section{Writer Function}
+If path no exist in database, thread function call this function and with use bfs function get result, send client and add path into database. This function first lock database mutex and check AW + AR and wait signal if bigger than 0 this equation. After that, use BFS function and get result. Send result to client and add calculated path into database. Finally check if Wait writer exists and if, send oktowrite signal. If not, send signal to reader thread.
+
+\begin{figure}[h!] 
+    \centering
+    \includegraphics[scale=0.6]{105.jpg}
+    \caption{Writer Function}
+\end{figure}
+
+\section{Signal Handler}
+Signal Handler function first assign 1 to atomic variable gotSIGINTSig becauce of other threads understand SIGINT have sent. After that, if threads finished their job and wait condition signal, send threads condition signals and wait all thread pool threads join. Again send signal to resizing thread and wait for join. After all threads join, deallocated all variables and write to log file. 
+\begin{figure}[h!] 
+    \centering
+    \includegraphics[scale=0.5]{202.jpg}
+    \caption{Signal Handler Function1}
+\end{figure}
+\newpage
+
+\begin{figure}[h!] 
+    \centering
+    \includegraphics[scale=0.5]{202.jpg}
+    \caption{Signal Handler Function2}
+\end{figure}
+
+\section{Input Check Server Examples}
+
+\begin{figure}[h!] 
+    \centering
+    \includegraphics[scale=0.5]{1.jpg}
+    \caption{input check server1}
+\end{figure}
+
+\begin{figure}[h!] 
+    \centering
+    \includegraphics[scale=0.5]{2.jpg}
+    \caption{input check server2}
+\end{figure}
+
+\begin{figure}[h!] 
+    \centering
+    \includegraphics[scale=0.5]{4.jpg}
+    \caption{double instance example}
+\end{figure}
+
+\section{Client}
+\begin{figure}[h!] 
+    \centering
+    \includegraphics[scale=0.5]{303.jpg}
+    \caption{client wrong count argument}
+\end{figure}
+\newpage
+\begin{figure}[h!] 
+    \centering
+    \includegraphics[scale=0.5]{3034.jpg}
+    \caption{client wrong type argument}
+\end{figure}
+
+Client first check arguments with getopt function. After that, create socket with given ip adress and port number. Connect with server, send requested path and wait answer from client. If answer have sent from server, print answer and exit.
+\begin{figure}[h!] 
+    \centering
+    \includegraphics[scale=0.5]{305.jpg}
+    \caption{client code}
+\end{figure}
+
+\begin{figure}[h!] 
+    \centering
+    \includegraphics[scale=0.5]{40.jpg}
+    \caption{client code output example}
+\end{figure}
+
+\newpage
+\section{Log File Example}
+
+\begin{figure}[h!] 
+    \centering
+    \includegraphics[scale=0.6]{log1.jpg}
+    \caption{Log File Example example 1}
+\end{figure}
+
+\begin{figure}[h!] 
+    \centering
+    \includegraphics[scale=0.6]{log2.jpg}
+    \caption{Log File Example example2}
+\end{figure}
+
+
+\end{document}
